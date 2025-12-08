@@ -1,4 +1,4 @@
-# Frontend Dockerfile - Version Sécurisée
+# Frontend Dockerfile - Version Sécurisée (Corrigée)
 
 # Stage 1: Build
 FROM node:20-alpine AS build
@@ -8,8 +8,8 @@ WORKDIR /app
 # Copier package files
 COPY package*.json ./
 
-# Installer les dépendances
-RUN npm ci --only=production
+# Installer TOUTES les dépendances (y compris dev pour le build)
+RUN npm ci
 
 # Copier le code source
 COPY . .
