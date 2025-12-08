@@ -1,0 +1,40 @@
+name: 🔍 SonarCloud Analysis
+
+on:
+  push:
+    branches: [main, master, develop]
+  pull_request:
+    branches: [main, master]
+
+jobs:
+  sonarcloud:
+    name: 🔎 SonarCloud Scan
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: 📥 Checkout repository
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0  # obligatoire pour sonar
+
+      - name: 🐍 Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+
+      - name: 📦 Install backend dependencies
+        run: |
+          cd backend
+          pip install -r requirements.txt
+
+      - name: 🧪 Run Pytest + Coverage (for sonar)
+        run: |
+          cd backend
+          pytest --cov=. --cov-report=xml
+
+      - name: 🔍 SonarCloud Scan
+        uses: SonarSource/sonarcloud-github-action@v2
+        env:
+          SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }}
+        with:
+          projectBaseDir: backend
