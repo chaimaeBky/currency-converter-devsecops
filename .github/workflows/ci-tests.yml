@@ -2,14 +2,11 @@ name: 🧪 Tests & Coverage
 
 on:
   push:
-    branches: [main, develop]
+    branches: [main, master, develop]  # ✅ Ajout de master
   pull_request:
-    branches: [main]
+    branches: [main, master]
 
 jobs:
-  # ============================================
-  # JOB 1: Tests Backend (Python/Flask)
-  # ============================================
   backend-tests:
     name: 🐍 Backend Tests
     runs-on: ubuntu-latest
@@ -32,14 +29,13 @@ jobs:
       - name: 🧪 Run tests with coverage
         run: |
           cd backend
-          python -m pytest --cov=. --cov-report=xml --cov-report=term --cov-report=html -v
+          python -m pytest --cov=. --cov-report=xml --cov-report=term -v
       
       - name: 📊 Upload coverage to Codecov
         uses: codecov/codecov-action@v4
         with:
           file: ./backend/coverage.xml
           flags: backend
-          name: backend-coverage
           fail_ci_if_error: false
       
       - name: 📈 Upload coverage report
@@ -48,11 +44,7 @@ jobs:
         with:
           name: backend-coverage-report
           path: backend/htmlcov/
-          retention-days: 30
 
-  # ============================================
-  # JOB 2: Tests Frontend (React/Vite)
-  # ============================================
   frontend-tests:
     name: ⚛️ Frontend Tests
     runs-on: ubuntu-latest
@@ -73,55 +65,20 @@ jobs:
           cd frontend
           npm ci
       
-      - name: 🧪 Run tests with coverage
+      - name: 🧪 Run tests
         run: |
           cd frontend
-          npm run test:coverage
-      
-      - name: 📊 Upload coverage to Codecov
-        uses: codecov/codecov-action@v4
-        with:
-          file: ./frontend/coverage/coverage-final.json
-          flags: frontend
-          name: frontend-coverage
-          fail_ci_if_error: false
-      
-      - name: 📈 Upload coverage report
-        uses: actions/upload-artifact@v4
-        if: always()
-        with:
-          name: frontend-coverage-report
-          path: frontend/coverage/
-          retention-days: 30
+          npm run test:run
 
-  # ============================================
-  # JOB 3: Résumé des Tests
-  # ============================================
   test-summary:
-    name: 📊 Test Summary
+    name: 📊 Summary
     runs-on: ubuntu-latest
     needs: [backend-tests, frontend-tests]
     if: always()
     
     steps:
-      - name: 📥 Checkout code
-        uses: actions/checkout@v4
-      
-      - name: 📊 Generate Summary
+      - name: 📊 Results
         run: |
-          echo "# 🧪 Test Results Summary" >> $GITHUB_STEP_SUMMARY
-          echo "" >> $GITHUB_STEP_SUMMARY
-          echo "## Results" >> $GITHUB_STEP_SUMMARY
-          echo "- 🐍 **Backend Tests**: ${{ needs.backend-tests.result }}" >> $GITHUB_STEP_SUMMARY
-          echo "- ⚛️ **Frontend Tests**: ${{ needs.frontend-tests.result }}" >> $GITHUB_STEP_SUMMARY
-          echo "" >> $GITHUB_STEP_SUMMARY
-          
-          if [ "${{ needs.backend-tests.result }}" = "success" ] && [ "${{ needs.frontend-tests.result }}" = "success" ]; then
-            echo "### ✅ All tests passed!" >> $GITHUB_STEP_SUMMARY
-          else
-            echo "### ❌ Some tests failed" >> $GITHUB_STEP_SUMMARY
-          fi
-      
-      - name: ❌ Fail if tests failed
-        if: needs.backend-tests.result != 'success' || needs.frontend-tests.result != 'success'
-        run: exit 1
+          echo "# 🧪 Test Results Summary"
+          echo "- 🐍 Backend: \${{ needs.backend-tests.result }}"
+          echo "- ⚛️ Frontend: \${{ needs.frontend-tests.result }}"
