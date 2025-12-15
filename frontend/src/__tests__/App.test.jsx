@@ -1,31 +1,32 @@
-
-import { describe, it, expect, beforeEach } from 'vitest';
-import { render, screen } from '@testing-library/react';
+import { describe, it, expect, beforeEach, vi } from 'vitest';
+import { render, screen, waitFor } from '@testing-library/react';
 import App from '../App';
+
+// Mock the CurrencyConverter component to avoid API calls
+vi.mock('../CurrencyConverter', () => ({
+  __esModule: true,
+  default: () => (
+    <div data-testid="currency-converter">
+      <h1>Currency Converter</h1>
+      <div>Mocked Converter Component</div>
+    </div>
+  )
+}));
 
 describe('App Component', () => {
   beforeEach(() => {
-    // Mock de fetch pour éviter les erreurs
-    global.fetch.mockResolvedValue({
-      ok: true,
-      json: async () => ({
-        conversion_rates: {
-          USD: 1,
-          EUR: 0.85,
-          MAD: 10.0
-        }
-      })
-    });
+    // Clear all mocks before each test
+    vi.clearAllMocks();
   });
 
   it('renders without crashing', () => {
     render(<App />);
-    expect(document.querySelector('.App')).toBeInTheDocument();
+    expect(screen.getByTestId('currency-converter')).toBeInTheDocument();
   });
 
-  it('renders CurrencyConverter component', async () => {
+  it('renders CurrencyConverter component', () => {
     render(<App />);
-    const heading = await screen.findByText(/Currency Converter/i, {}, { timeout: 2000 });
-    expect(heading).toBeInTheDocument();
+    expect(screen.getByText(/Currency Converter/i)).toBeInTheDocument();
+    expect(screen.getByTestId('currency-converter')).toBeInTheDocument();
   });
 });

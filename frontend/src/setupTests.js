@@ -1,12 +1,19 @@
-
-import { expect, afterEach, vi } from 'vitest';
+import '@testing-library/jest-dom';
+import { vi, beforeAll, afterEach, afterAll } from 'vitest';
 import { cleanup } from '@testing-library/react';
-import * as matchers from '@testing-library/jest-dom/matchers';
 
-expect.extend(matchers);
-
-afterEach(() => {
-  cleanup();
+// Mock fetch globally
+beforeAll(() => {
+  global.fetch = vi.fn();
 });
 
-global.fetch = vi.fn();
+// Cleanup after each test
+afterEach(() => {
+  cleanup();
+  vi.clearAllMocks();
+});
+
+// Restore all mocks after tests
+afterAll(() => {
+  vi.restoreAllMocks();
+});

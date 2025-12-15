@@ -1,4 +1,4 @@
-name:  SonarCloud Analysis
+name: SonarCloud Analysis
 
 on:
   push:
@@ -8,37 +8,35 @@ on:
 
 jobs:
   sonarcloud:
-    name:  SonarCloud Scan
+    name: SonarCloud Scan
     runs-on: ubuntu-latest
-
+    
     steps:
-      # 1️ Checkout repository
-      - name:  Checkout repository
+      - name: Checkout repository
         uses: actions/checkout@v4
         with:
           fetch-depth: 0
 
-      # 2️⃣ Set up Python
-      - name:  Set up Python
+      - name: Set up Python
         uses: actions/setup-python@v5
         with:
           python-version: '3.11'
+          cache: 'pip'
+          cache-dependency-path: backend/requirements.txt
 
-      # 3️⃣ Install backend dependencies
-      - name:  Install dependencies
+      - name: Install dependencies
         run: |
           cd backend
           pip install --upgrade pip
           pip install -r requirements.txt
+          pip install pytest pytest-cov
 
-      # 4️⃣ Run Pytest for coverage (SonarCloud needs coverage file)
-      - name:  Run Pytest + Coverage
+      - name: Run Pytest + Coverage
         run: |
           cd backend
-          pytest --cov=. --cov-report=xml
+          python -m pytest tests/ --cov=. --cov-report=xml
 
-      # 5️⃣ SonarCloud Scan
-      - name:  SonarCloud Scan
+      - name: SonarCloud Scan
         uses: SonarSource/sonarcloud-github-action@v2
         env:
           SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }}
@@ -48,3 +46,6 @@ jobs:
             -Dsonar.projectKey=saidaelajimi_currency-converter-devsecops
             -Dsonar.organization=saidaelajimi
             -Dsonar.python.coverage.reportPaths=backend/coverage.xml
+            -Dsonar.sources=.
+            -Dsonar.exclusions=**/__pycache__/**,**/*.pyc
+            -Dsonar.sourceEncoding=UTF-8

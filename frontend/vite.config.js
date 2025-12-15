@@ -4,28 +4,26 @@ import react from '@vitejs/plugin-react'
 export default defineConfig({
   plugins: [react()],
   
-  // Vercel needs explicit configuration
   server: {
     port: 5173,
-    host: true
-  },
-  
-  build: {
-    outDir: 'dist',
-    sourcemap: false,
-    rollupOptions: {
-      output: {
-        manualChunks: {
-          vendor: ['react', 'react-dom'],
-          ui: ['axios']
-        }
-      }
-    }
+    host: true,
   },
   
   test: {
     globals: true,
     environment: 'jsdom',
-    setupFiles: './src/setupTests.js'
+    setupFiles: './src/setupTests.js', // CRITICAL: This must point to your setup file
+    css: true,
+    coverage: {
+      provider: 'v8',
+      reporter: ['text', 'html', 'lcov'],
+      exclude: [
+        'node_modules/',
+        'src/setupTests.js',
+        'src/__tests__/**',
+        'dist/',
+        'coverage/'
+      ]
+    }
   }
 })
