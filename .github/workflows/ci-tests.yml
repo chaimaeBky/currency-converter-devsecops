@@ -6,6 +6,9 @@ on:
   pull_request:
     branches: [main, master]
 
+env:
+  CODECOV_TOKEN: ${{ secrets.CODECOV_TOKEN }}
+
 jobs:
   backend-tests:
     name: Backend Tests
@@ -35,18 +38,15 @@ jobs:
           python -m pytest tests/ --cov=. --cov-report=xml --cov-report=term -v
       
       - name: Upload coverage to Codecov (Optional)
-        if: success() && secrets.CODECOV_TOKEN != ''
+        if: success() && env.CODECOV_TOKEN != ''
         uses: codecov/codecov-action@v4
-        env:
-          CODECOV_TOKEN: ${{ secrets.CODECOV_TOKEN }}
         with:
           file: ./backend/coverage.xml
           flags: backend
           fail_ci_if_error: false
-          token: ${{ secrets.CODECOV_TOKEN }}
       
       - name: Skip Codecov if no token
-        if: success() && secrets.CODECOV_TOKEN == ''
+        if: success() && env.CODECOV_TOKEN == ''
         run: |
           echo "⚠️ CODECOV_TOKEN not set. Skipping Codecov upload."
           echo "Coverage report saved as artifact."
