@@ -10,8 +10,6 @@ jobs:
   sonarcloud:
     name: SonarCloud Scan
     runs-on: ubuntu-latest
-    env:
-      SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }}
     
     steps:
       - name: Checkout repository
@@ -54,7 +52,7 @@ jobs:
             -Dsonar.sourceEncoding=UTF-8
 
       - name: Skip SonarCloud if no token
-        if: env.SONAR_TOKEN == ''
+        if: ${{ secrets.SONAR_TOKEN == '' }}
         run: |
           echo "⚠️ SONAR_TOKEN not set. Skipping SonarCloud analysis."
           echo "To enable SonarCloud:"
