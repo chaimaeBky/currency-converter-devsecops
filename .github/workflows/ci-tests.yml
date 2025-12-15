@@ -34,12 +34,22 @@ jobs:
           cd backend
           python -m pytest tests/ --cov=. --cov-report=xml --cov-report=term -v
       
-      - name: Upload coverage to Codecov
+      - name: Upload coverage to Codecov (Optional)
+        if: success() && secrets.CODECOV_TOKEN != ''
         uses: codecov/codecov-action@v4
+        env:
+          CODECOV_TOKEN: ${{ secrets.CODECOV_TOKEN }}
         with:
           file: ./backend/coverage.xml
           flags: backend
-          fail_ci_if_error: true
+          fail_ci_if_error: false
+          token: ${{ secrets.CODECOV_TOKEN }}
+      
+      - name: Skip Codecov if no token
+        if: success() && secrets.CODECOV_TOKEN == ''
+        run: |
+          echo "⚠️ CODECOV_TOKEN not set. Skipping Codecov upload."
+          echo "Coverage report saved as artifact."
       
       - name: Upload coverage report
         uses: actions/upload-artifact@v4
@@ -73,7 +83,6 @@ jobs:
           cd frontend
           npm run test:run -- --run --reporter=verbose
         env:
-          # Prevent real API calls
           VITE_API_URL: 'http://test.localhost'
       
       - name: Upload test results
