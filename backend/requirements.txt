@@ -1,13 +1,13 @@
-# Production dependencies
-Flask==3.0.0
-flask-cors==6.0.0
-Flask-WTF==1.2.1
-requests==2.32.4
-gunicorn==22.0.0
-python-dotenv==1.0.0
-Werkzeug==3.1.4
+Flask==2.3.3
+flask-cors==4.0.0
+requests==2.31.0
+flask-wtf
 
-# Development/Testing (for local and CI)
+gunicorn==22.0.0
+pymongo==4.6.1
+Werkzeug==3.1.4
+python-dotenv==1.0.0
+# Tests (NOUVEAU)
 pytest==7.4.3
 pytest-cov==4.1.0
 pytest-flask==1.3.0
