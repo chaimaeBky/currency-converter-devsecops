@@ -39,8 +39,10 @@ jobs:
           python -m pytest tests/ --cov=. --cov-report=xml
 
       - name: SonarCloud Scan
-        if: env.SONAR_TOKEN != ''
+        if: ${{ secrets.SONAR_TOKEN != '' }}
         uses: SonarSource/sonarcloud-github-action@v2
+        env:
+          SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }}
         with:
           projectBaseDir: backend
           args: >
@@ -50,7 +52,6 @@ jobs:
             -Dsonar.sources=.
             -Dsonar.exclusions=**/__pycache__/**,**/*.pyc,venv/**
             -Dsonar.sourceEncoding=UTF-8
-            -Dsonar.host.url=https://sonarcloud.io
 
       - name: Skip SonarCloud if no token
         if: env.SONAR_TOKEN == ''
