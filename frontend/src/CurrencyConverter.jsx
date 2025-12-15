@@ -10,25 +10,29 @@ const CurrencyConverter = () => {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
 
-  // Use environment variable or fallback to localhost for development
-  const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:5000';
+ // In your CurrencyConverter component
+const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:5000';
 
-  useEffect(() => {
-    fetch(`${API_URL}/rates`)
-      .then(res => {
-        if (!res.ok) throw new Error('Failed to fetch rates');
-        return res.json();
-      })
-      .then(data => {
+useEffect(() => {
+  fetch(`${API_URL}/rates`)
+    .then(res => {
+      if (!res.ok) throw new Error(`HTTP ${res.status}: ${res.statusText}`);
+      return res.json();
+    })
+    .then(data => {
+      if (data.status === "success") {
         setRates(data.conversion_rates);
-        setLoading(false);
-      })
-      .catch(err => {
-        console.error("Error fetching rates:", err);
-        setError(err.message);
-        setLoading(false);
-      });
-  }, []);
+      } else {
+        throw new Error(data.message || "Failed to fetch rates");
+      }
+      setLoading(false);
+    })
+    .catch(err => {
+      console.error("Error fetching rates:", err);
+      setError(`API Error: ${err.message}. URL: ${API_URL}`);
+      setLoading(false);
+    });
+}, []);
 
   const Convert = () => {
     if (!rates[fromCurrency] || !rates[toCurrency]) return;
