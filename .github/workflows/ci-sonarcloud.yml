@@ -29,20 +29,24 @@ jobs:
           cd backend
           pip install --upgrade pip
           pip install -r requirements.txt
-          pip install pytest pytest-cov
 
-      - name: Run Pytest + Coverage
-        id: coverage
+      - name: Run tests and generate coverage
         run: |
           cd backend
-          python -m pytest tests/ --cov=. --cov-report=xml --cov-report=term
-          echo "Coverage file generated:"
-          ls -la coverage.xml
-          echo "Coverage content (first 5 lines):"
-          head -5 coverage.xml
+          echo "Running tests with coverage..."
+          python -m pytest tests/ --cov=. --cov-report=xml --no-cov-on-fail
+          
+          echo "Checking coverage.xml..."
+          if [ -f "coverage.xml" ]; then
+            echo "✅ coverage.xml generated successfully"
+            echo "File size: $(wc -l < coverage.xml) lines"
+          else
+            echo "❌ coverage.xml not found!"
+            echo "Generating manually..."
+            python -m coverage xml
+          fi
 
       - name: SonarCloud Scan
-        continue-on-error: true
         uses: SonarSource/sonarcloud-github-action@v2
         env:
           SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }}
@@ -54,16 +58,5 @@ jobs:
             -Dsonar.python.coverage.reportPaths=coverage.xml
             -Dsonar.python.version=3.11
             -Dsonar.sources=.
-            -Dsonar.exclusions=**/__pycache__/**,**/*.pyc,venv/**
+            -Dsonar.exclusions=**/__pycache__/**,**/*.pyc,venv/**,passenger_wsgi.py
             -Dsonar.sourceEncoding=UTF-8
-            -Dsonar.coverage.exclusions=**/tests/**,**/__pycache__/**
-
-      - name: Check if SonarCloud succeeded
-        if: always()
-        run: |
-          if [ "${{ job.status }}" == "success" ]; then
-            echo "✅ SonarCloud analysis completed successfully!"
-          else
-            echo "⚠️ SonarCloud skipped or failed. Add SONAR_TOKEN to GitHub Secrets to enable."
-            echo "Coverage was generated: ${{ steps.coverage.outcome }}"
-          fi
