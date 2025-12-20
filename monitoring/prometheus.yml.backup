@@ -1,0 +1,17 @@
+global:
+  scrape_interval: 15s
+  evaluation_interval: 15s
+
+scrape_configs:
+  # Monitor Flask app (your currency converter backend)
+  - job_name: 'currency-converter-api'
+    static_configs:
+      - targets: ['host.docker.internal:5000']  # For Windows Docker
+        labels:
+          service: 'currency-converter'
+          environment: 'production'
+  
+  # Monitor Prometheus itself
+  - job_name: 'prometheus'
+    static_configs:
+      - targets: ['localhost:9090']

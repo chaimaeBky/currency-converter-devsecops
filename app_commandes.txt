@@ -1,0 +1,56 @@
+╔══════════════════════════════════════════════════════════════╗
+║                 CURRENCY CONVERTER - QUICK GUIDE             ║
+╚══════════════════════════════════════════════════════════════╝
+
+�� START EVERYTHING:
+cd ~/OneDrive/Bureau/s9/PFA/currency2/currency-converter-devsecops
+docker-compose up -d
+docker-compose -f docker-compose.monitoring-simple.yml up -d
+
+��� CHECK IF RUNNING:
+docker ps  # Should show 4 containers
+
+��� URLs:
+• Frontend:    http://localhost:5173
+• Backend API: http://localhost:5000
+• Prometheus:  http://localhost:9090
+• Grafana:     http://localhost:3001  (admin/admin123)
+
+��� DEMO COMMANDS:
+# 1. Make live API call:
+curl "http://localhost:5000/convert?from=USD&to=EUR&amount=100"
+
+# 2. Generate traffic during presentation:
+while true; do curl -s "http://localhost:5000/convert?from=USD&to=EUR&amount=$((RANDOM%1000+1))" > /dev/null; sleep 0.5; echo -n "."; done
+
+# 3. Quick health check:
+curl http://localhost:5000/health
+
+��� PROMETHEUS QUERIES (paste at http://localhost:9090):
+1. rate(currency_converter_http_request_total{status="200"}[5m]) * 60
+2. currency_converter_http_request_total{status="200"}
+3. up{job="currency-converter-api"}
+
+��� GRAFANA DASHBOARD:
+http://localhost:3001/d/8f3d435e-f977-44b5-85f4-78452d6d30d2
+Login: admin / admin123
+
+��� TROUBLESHOOTING:
+# Restart everything:
+docker-compose down && docker-compose -f docker-compose.monitoring-simple.yml down
+docker-compose up -d && docker-compose -f docker-compose.monitoring-simple.yml up -d
+
+# Check logs:
+docker logs flask_app
+docker logs currency_prometheus
+
+��� PRESENTATION FLOW:
+1. Start with Frontend (http://localhost:5173)
+2. Show API working (make curl request)
+3. Show Prometheus (paste query #1, make more requests, watch graph update)
+4. Show Grafana dashboard (explain metrics)
+5. Explain architecture (Docker, monitoring, DevSecOps)
+
+⚡ EMERGENCY:
+If something breaks, run the "Restart everything" command above.
+Wait 30 seconds for services to start.

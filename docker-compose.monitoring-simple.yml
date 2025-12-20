@@ -1,0 +1,29 @@
+version: '3.8'
+
+services:
+  prometheus:
+    image: prom/prometheus:latest
+    container_name: currency_prometheus
+    ports: 
+      - "9090:9090"
+    volumes: 
+      - "./monitoring/prometheus.yml:/etc/prometheus/prometheus.yml"
+    command: 
+      - "--config.file=/etc/prometheus/prometheus.yml"
+    networks:
+      - default
+
+  grafana:
+    image: grafana/grafana:latest
+    container_name: currency_grafana
+    ports: 
+      - "3001:3000"
+    environment:
+      - GF_SECURITY_ADMIN_PASSWORD=admin123
+    networks:
+      - default
+
+networks:
+  default:
+    external: true
+    name: currency-converter-devsecops_default
