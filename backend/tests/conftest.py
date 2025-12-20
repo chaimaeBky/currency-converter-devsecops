@@ -6,7 +6,7 @@ import os
 # Ajouter le dossier parent au path pour importer app
 sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), '..')))
 
-# Importer l'app Flask (votre app.py actuel)
+# Import app - prometheus should be available via requirements.txt
 from app import app as flask_app
 
 
@@ -18,7 +18,7 @@ def app():
     flask_app.config.update({
         "TESTING": True,
     })
-    
+
     yield flask_app
 
 
