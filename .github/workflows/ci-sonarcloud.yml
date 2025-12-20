@@ -32,9 +32,14 @@ jobs:
           pip install pytest pytest-cov
 
       - name: Run Pytest + Coverage
+        id: coverage
         run: |
           cd backend
-          python -m pytest tests/ --cov=. --cov-report=xml
+          python -m pytest tests/ --cov=. --cov-report=xml --cov-report=term
+          echo "Coverage file generated:"
+          ls -la coverage.xml
+          echo "Coverage content (first 5 lines):"
+          head -5 coverage.xml
 
       - name: SonarCloud Scan
         continue-on-error: true
@@ -46,10 +51,12 @@ jobs:
           args: >
             -Dsonar.projectKey=chaimaeBky_currency-converter-devsecops
             -Dsonar.organization=chaimaeBky
-            -Dsonar.python.coverage.reportPaths=backend/coverage.xml
+            -Dsonar.python.coverage.reportPaths=coverage.xml
+            -Dsonar.python.version=3.11
             -Dsonar.sources=.
             -Dsonar.exclusions=**/__pycache__/**,**/*.pyc,venv/**
             -Dsonar.sourceEncoding=UTF-8
+            -Dsonar.coverage.exclusions=**/tests/**,**/__pycache__/**
 
       - name: Check if SonarCloud succeeded
         if: always()
@@ -58,5 +65,5 @@ jobs:
             echo "✅ SonarCloud analysis completed successfully!"
           else
             echo "⚠️ SonarCloud skipped or failed. Add SONAR_TOKEN to GitHub Secrets to enable."
-            echo "Your tests still passed: 12/12 backend, 9/9 frontend, 93% coverage"
+            echo "Coverage was generated: ${{ steps.coverage.outcome }}"
           fi
