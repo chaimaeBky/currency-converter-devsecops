@@ -54,7 +54,7 @@ jobs:
           projectBaseDir: backend
           args: >
             -Dsonar.projectKey=chaimaeBky_currency-converter-devsecops
-            -Dsonar.organization=chaimaeBky
+            -Dsonar.organization=chaimaebky
             -Dsonar.python.coverage.reportPaths=coverage.xml
             -Dsonar.python.version=3.11
             -Dsonar.sources=.
