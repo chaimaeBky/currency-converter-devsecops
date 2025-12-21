@@ -67,8 +67,21 @@ def get_rates():
         api_key = EXCHANGE_API_KEY
         base = request.args.get('base', 'USD')
         
+        # MINIMAL VALIDATION: Only add this block
+        # Validate currency code is exactly 3 uppercase letters
+        if not base.isalpha() or len(base) != 3 or not base.isupper():
+            return jsonify({
+                "status": "error", 
+                "message": "Invalid currency code. Must be 3 uppercase letters like USD, EUR, etc."
+            }), 400
+        
+        # URL SAFETY: URL encode the base currency
+        from urllib.parse import quote
+        encoded_base = quote(base, safe='')
+        
+        # ORIGINAL CODE with only this line changed:
         response = requests.get(
-            f"https://v6.exchangerate-api.com/v6/{api_key}/latest/{base}",
+            f"https://v6.exchangerate-api.com/v6/{api_key}/latest/{encoded_base}",
             timeout=5
         )
         data = response.json()
@@ -84,7 +97,6 @@ def get_rates():
             "status": "error",
             "message": str(e)
         }), 500
-
 @app.route('/convert')
 @conversion_counter
 def convert():
@@ -96,11 +108,30 @@ def convert():
         to_curr = request.args.get('to', 'EUR')
         amount = float(request.args.get('amount', 1))
         
+        # MINIMAL VALIDATION for both currencies
+        if not from_curr.isalpha() or len(from_curr) != 3 or not from_curr.isupper():
+            return jsonify({
+                "status": "error",
+                "message": "Invalid 'from' currency code. Must be 3 uppercase letters."
+            }), 400
+        
+        if not to_curr.isalpha() or len(to_curr) != 3 or not to_curr.isupper():
+            return jsonify({
+                "status": "error",
+                "message": "Invalid 'to' currency code. Must be 3 uppercase letters."
+            }), 400
+        
+        # URL SAFETY: URL encode the currencies
+        from urllib.parse import quote
+        encoded_from = quote(from_curr, safe='')
+        encoded_to = quote(to_curr, safe='')
+        
         # Security: API key comes from environment variable
         api_key = EXCHANGE_API_KEY
         
+        # ORIGINAL CODE with only this line changed:
         response = requests.get(
-            f"https://v6.exchangerate-api.com/v6/{api_key}/pair/{from_curr}/{to_curr}/{amount}",
+            f"https://v6.exchangerate-api.com/v6/{api_key}/pair/{encoded_from}/{encoded_to}/{amount}",
             timeout=5
         )
         data = response.json()
