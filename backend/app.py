@@ -2,9 +2,11 @@ import os
 from flask import Flask, jsonify, request
 from flask_cors import CORS
 import requests
+import re 
 from prometheus_flask_exporter import PrometheusMetrics
 from dotenv import load_dotenv
 from flask_wtf.csrf import CSRFProtect
+from urllib.parse import quote
 
 # Load environment variables from .env file
 load_dotenv()
@@ -66,8 +68,23 @@ def get_rates():
         api_key = EXCHANGE_API_KEY
         base = request.args.get('base', 'USD')
         
+        # Validate and sanitize base currency
+        # Allow only 3-letter currency codes
+        import re
+        if not re.match(r'^[A-Z]{3}$', base):
+            return jsonify({
+                "status": "error",
+                "message": "Invalid currency code. Must be 3 uppercase letters."
+            }), 400
+        
+        # SECURITY FIX: Use URL-safe encoding
+        encoded_base = quote(base, safe='')
+        
+        # SECURITY FIX: Construct URL safely using parameters
+        url = f"https://v6.exchangerate-api.com/v6/{api_key}/latest/{encoded_base}"
+        
         response = requests.get(
-            f"https://v6.exchangerate-api.com/v6/{api_key}/latest/{base}",
+            url,  # Use the constructed URL
             timeout=5
         )
         data = response.json()
@@ -83,7 +100,7 @@ def get_rates():
             "status": "error",
             "message": str(e)
         }), 500
-
+    
 @app.route('/convert')
 @conversion_counter
 def convert():
@@ -95,11 +112,39 @@ def convert():
         to_curr = request.args.get('to', 'EUR')
         amount = float(request.args.get('amount', 1))
         
+        # Validate currency codes
+        import re
+        if not re.match(r'^[A-Z]{3}$', from_curr):
+            return jsonify({
+                "status": "error",
+                "message": "Invalid 'from' currency code. Must be 3 uppercase letters."
+            }), 400
+        
+        if not re.match(r'^[A-Z]{3}$', to_curr):
+            return jsonify({
+                "status": "error",
+                "message": "Invalid 'to' currency code. Must be 3 uppercase letters."
+            }), 400
+        
+        # Validate amount
+        if amount <= 0:
+            return jsonify({
+                "status": "error",
+                "message": "Amount must be positive."
+            }), 400
+        
         # Security: API key comes from environment variable
         api_key = EXCHANGE_API_KEY
         
+        # SECURITY FIX: Encode URL parameters
+        encoded_from = quote(from_curr, safe='')
+        encoded_to = quote(to_curr, safe='')
+        
+        # SECURITY FIX: Construct URL safely
+        url = f"https://v6.exchangerate-api.com/v6/{api_key}/pair/{encoded_from}/{encoded_to}/{amount}"
+        
         response = requests.get(
-            f"https://v6.exchangerate-api.com/v6/{api_key}/pair/{from_curr}/{to_curr}/{amount}",
+            url,  # Use the constructed URL
             timeout=5
         )
         data = response.json()
@@ -113,6 +158,11 @@ def convert():
             "rate": data.get("conversion_rate")
         })
         
+    except ValueError:
+        return jsonify({
+            "status": "error",
+            "message": "Invalid amount parameter. Must be a number."
+        }), 400
     except Exception as e:
         return jsonify({
             "status": "error",
