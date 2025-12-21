@@ -23,10 +23,10 @@ csrf = CSRFProtect(app)
 metrics = PrometheusMetrics(app, defaults_prefix='currency_converter')
 metrics.info('app_info', 'Currency Converter API', version='1.0.0')
 
-# Security: Get API key from environment variable with fallback for development
-EXCHANGE_API_KEY = os.getenv('EXCHANGE_API_KEY', '97f9dc6126138480ee6da5fb')
-if EXCHANGE_API_KEY == '97f9dc6126138480ee6da5fb':
-    print("⚠️ WARNING: Using default API key. Set EXCHANGE_API_KEY environment variable for production.")
+# Security: Get API key from environment variable - NO HARDCODED DEFAULT
+EXCHANGE_API_KEY = os.getenv("EXCHANGE_API_KEY")
+if EXCHANGE_API_KEY is None:
+    print("⚠️ WARNING: EXCHANGE_API_KEY environment variable is not set. API will not work without it.")
 
 # Configure CORS with security settings
 CORS(app, resources={r"/*": {"origins": "*"}})  # In production, restrict origins
@@ -50,7 +50,8 @@ def health():
         },
         "security": {
             "csrf_enabled": app.config['WTF_CSRF_ENABLED'],
-            "environment": os.getenv('FLASK_ENV', 'development')
+            "environment": os.getenv('FLASK_ENV', 'development'),
+            "api_key_configured": EXCHANGE_API_KEY is not None
         }
     }), 200
 
@@ -58,9 +59,11 @@ def health():
 @conversion_counter
 def get_rates():
     """Get currency exchange rates - GET endpoint, CSRF exempt by default"""
+    if EXCHANGE_API_KEY is None:
+        return jsonify({"status": "error", "message": "API key not configured. Set EXCHANGE_API_KEY environment variable."}), 503
     try:
-        # Security: API key now comes from environment variable
-        api_key = os.getenv('EXCHANGE_API_KEY', '97f9dc6126138480ee6da5fb')
+        # Security: API key comes from environment variable
+        api_key = EXCHANGE_API_KEY
         base = request.args.get('base', 'USD')
         
         response = requests.get(
@@ -85,13 +88,15 @@ def get_rates():
 @conversion_counter
 def convert():
     """Convert currency - GET endpoint, CSRF exempt by default"""
+    if EXCHANGE_API_KEY is None:
+        return jsonify({"status": "error", "message": "API key not configured. Set EXCHANGE_API_KEY environment variable."}), 503
     try:
         from_curr = request.args.get('from', 'USD')
         to_curr = request.args.get('to', 'EUR')
         amount = float(request.args.get('amount', 1))
         
-        # Security: API key now comes from environment variable
-        api_key = os.getenv('EXCHANGE_API_KEY', '97f9dc6126138480ee6da5fb')
+        # Security: API key comes from environment variable
+        api_key = EXCHANGE_API_KEY
         
         response = requests.get(
             f"https://v6.exchangerate-api.com/v6/{api_key}/pair/{from_curr}/{to_curr}/{amount}",
