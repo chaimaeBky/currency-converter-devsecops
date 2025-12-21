@@ -7,7 +7,8 @@ omit =
     passenger_wsgi.py
 
 [report]
-fail_under = 0
+# Temporary: Lower requirement for presentation
+fail_under = 55
 exclude_lines = 
     pragma: no cover
     def __repr__
