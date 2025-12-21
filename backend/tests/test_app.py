@@ -71,4 +71,74 @@ def test_cors_headers_present(client):
         response = client.get('/rates')
         assert 'Access-Control-Allow-Origin' in response.headers
 
+# Add these tests to test_app.py
 
+def test_rates_api_key_missing(monkeypatch):
+    """Test /rates when API key is not configured"""
+    # Temporarily remove the API key
+    import app
+    monkeypatch.setattr(app, 'EXCHANGE_API_KEY', None)
+    
+    response = app.app.test_client().get('/rates')
+    assert response.status_code == 503
+    data = response.get_json()
+    assert data['status'] == 'error'
+    assert 'API key not configured' in data['message']
+
+
+def test_convert_api_key_missing(monkeypatch):
+    """Test /convert when API key is not configured"""
+    # Temporarily remove the API key
+    import app
+    monkeypatch.setattr(app, 'EXCHANGE_API_KEY', None)
+    
+    response = app.app.test_client().get('/convert?from=USD&to=EUR&amount=1')
+    assert response.status_code == 503
+    data = response.get_json()
+    assert data['status'] == 'error'
+    assert 'API key not configured' in data['message']
+
+
+def test_metrics_endpoint_exists(client):
+    """Test Prometheus metrics endpoint exists"""
+    response = client.get('/metrics')
+    assert response.status_code == 200
+    assert 'text/plain' in response.content_type
+
+
+def test_csrf_configuration(app):
+    """Test CSRF is configured correctly"""
+    # Test CSRF is enabled in config
+    assert 'WTF_CSRF_ENABLED' in app.config
+    assert app.config['WTF_CSRF_ENABLED'] is True
+    
+    # Test secret key is set
+    assert 'SECRET_KEY' in app.config
+    assert app.config['SECRET_KEY'] is not None
+
+
+def test_cors_configuration():
+    """Test CORS is configured"""
+    from app import app
+    # Check if CORS is properly set up
+    response = app.test_client().get('/health')
+    assert 'Access-Control-Allow-Origin' in response.headers
+    assert response.headers['Access-Control-Allow-Origin'] == '*'
+
+
+def test_rates_exception_handling(client):
+    """Test exception handling in /rates endpoint"""
+    with patch('requests.get', side_effect=Exception("Network error")):
+        response = client.get('/rates?base=USD')
+        assert response.status_code == 500
+        data = response.get_json()
+        assert data['status'] == 'error'
+
+
+def test_convert_exception_handling(client):
+    """Test exception handling in /convert endpoint"""
+    with patch('requests.get', side_effect=Exception("Network error")):
+        response = client.get('/convert?from=USD&to=EUR&amount=1')
+        assert response.status_code == 500
+        data = response.get_json()
+        assert data['status'] == 'error'
