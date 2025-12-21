@@ -1,7 +1,7 @@
 
 import pytest
 from unittest.mock import patch, Mock
-#Tests unitaires de l'application Flask
+
 
 def test_app_exists(app):
     """Test que l'application Flask existe"""
