@@ -17,16 +17,23 @@ app = Flask(__name__)
 # Security: Configure CSRF protection
 app.config['WTF_CSRF_ENABLED'] = True
 
-# SECURITY FIX: Remove hardcoded credential
-app.config['SECRET_KEY'] = os.getenv('FLASK_SECRET_KEY')
+# Get secret key from environment - NO HARDCODED VALUE
+secret_key = os.getenv('FLASK_SECRET_KEY')
 
-# Check if secret key is set
-if app.config['SECRET_KEY'] is None:
+if secret_key is None:
     if os.getenv('FLASK_ENV') == 'production':
         raise ValueError("FLASK_SECRET_KEY environment variable must be set in production")
     else:
-        app.config['SECRET_KEY'] = secrets.token_hex(32)
-        print("⚠️ WARNING: Using auto-generated secret key for development only. Set FLASK_SECRET_KEY for production.")
+        # For development: Generate per-session key from environment or random
+        # Check if we have a development key in .env.development
+        secret_key = os.getenv('DEV_SECRET_KEY')
+        if secret_key is None:
+            # Generate a new random key for this session only
+            secret_key = secrets.token_urlsafe(32)
+            print("⚠️ WARNING: Using session-based secret key for development only.")
+            print("   Set FLASK_SECRET_KEY for production or DEV_SECRET_KEY for development.")
+
+app.config['SECRET_KEY'] = secret_key
 
 # Initialize CSRF protection
 csrf = CSRFProtect(app)
