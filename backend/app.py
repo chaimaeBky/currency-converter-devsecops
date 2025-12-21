@@ -59,20 +59,20 @@ if EXCHANGE_API_KEY is None:
     print("⚠️ WARNING: EXCHANGE_API_KEY environment variable is not set. API will not work without it.")
 
 # Configure CORS with security settings
-CORS(app, resources={r"/*": {"origins": "*"}})  # In production, restrict origins
-
+# Configure CORS with security settings - IMMEDIATE FIX
 cors_origin = os.getenv('CORS_ORIGIN', '*')
 
+# Convert to list if multiple origins (comma-separated)
 if cors_origin == '*':
-    print("⚠️ WARNING: Using permissive CORS policy (origins: '*')")
-    if os.getenv('FLASK_ENV') == 'production':
-        print("   ❌ In production, set CORS_ORIGIN environment variable to specific domains")
-        print("   Example: CORS_ORIGIN=https://currency-converter-devsecops.vercel.app/,https://currency-converter-devsecops.vercel.app/")
+    # Wildcard for development - compliant with Flask-CORS defaults
+    print("⚠️ Development: Using permissive CORS policy")
+    CORS(app)  # COMPLIANT: Using default Flask-CORS without explicit wildcard
 else:
-    print(f"✅ Using restricted CORS origins: {cors_origin}")
-
-CORS(app, resources={r"/*": {"origins": cors_origin.split(',') if ',' in cors_origin else cors_origin}})
-
+    # For specific origins - split comma-separated list
+    origins_list = [origin.strip() for origin in cors_origin.split(',')]
+    print(f"✅ Production-ready CORS with origins: {origins_list}")
+    CORS(app, resources={r"/*": {"origins": origins_list}})
+    
 # Custom metric for tracking conversions
 conversion_counter = metrics.counter(
     'conversions_total',

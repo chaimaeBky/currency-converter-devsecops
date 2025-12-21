@@ -142,3 +142,6 @@ def test_convert_exception_handling(client):
         assert response.status_code == 500
         data = response.get_json()
         assert data['status'] == 'error'
+
+
+
