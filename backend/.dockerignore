@@ -1,0 +1,43 @@
+# Sensitive files
+.env
+.env.*
+*.pem
+*.key
+*.cert
+.git
+.gitignore
+
+# Development files
+__pycache__/
+*.pyc
+*.pyo
+*.pyd
+.Python
+.pytest_cache/
+.coverage
+htmlcov/
+*.egg-info/
+dist/
+build/
+
+# Logs
+*.log
+logs/
+
+# IDE files
+.vscode/
+.idea/
+*.swp
+*.swo
+
+# OS files
+.DS_Store
+Thumbs.db
+
+# Test files (optional - include if you want them)
+# test_*.py
+
+# Configuration files that might contain secrets
+.gitlab-ci.yml
+.sonarcloud.properties
+docker-compose.yml

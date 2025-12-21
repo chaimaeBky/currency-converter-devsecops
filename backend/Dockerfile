@@ -15,8 +15,10 @@ RUN pip install --no-cache-dir --upgrade pip && \
     pip install --no-cache-dir -r requirements.txt && \
     pip install --no-cache-dir gunicorn
 
-# Copier le code de l'application
-COPY . .
+# SECURITY FIX: Copy only necessary application files
+COPY app.py .
+# COPY test_app.py .  # Only if you need tests in container
+# COPY any_other_necessary_files.py .
 
 # Changer les permissions
 RUN chown -R appuser:appuser /app

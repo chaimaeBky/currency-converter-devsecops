@@ -61,6 +61,18 @@ if EXCHANGE_API_KEY is None:
 # Configure CORS with security settings
 CORS(app, resources={r"/*": {"origins": "*"}})  # In production, restrict origins
 
+cors_origin = os.getenv('CORS_ORIGIN', '*')
+
+if cors_origin == '*':
+    print("⚠️ WARNING: Using permissive CORS policy (origins: '*')")
+    if os.getenv('FLASK_ENV') == 'production':
+        print("   ❌ In production, set CORS_ORIGIN environment variable to specific domains")
+        print("   Example: CORS_ORIGIN=https://currency-converter-devsecops.vercel.app/,https://currency-converter-devsecops.vercel.app/")
+else:
+    print(f"✅ Using restricted CORS origins: {cors_origin}")
+
+CORS(app, resources={r"/*": {"origins": cors_origin.split(',') if ',' in cors_origin else cors_origin}})
+
 # Custom metric for tracking conversions
 conversion_counter = metrics.counter(
     'conversions_total',
