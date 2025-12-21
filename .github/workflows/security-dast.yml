@@ -1,4 +1,4 @@
-name: 🔍 DAST Security Scan
+name: DAST Security Scan
 on:
   push:
     branches: [ main , master ]
@@ -21,7 +21,7 @@ jobs:
       - name: Start Application with Docker Compose
         run: |
           cd backend
-          docker-compose up -d web
+          docker compose up -d web
           sleep 10 # Attendre que l'API soit prête
           
       - name: Run OWASP ZAP Baseline Scan
@@ -45,4 +45,4 @@ jobs:
         if: always()
         run: |
           cd backend
-          docker-compose down
+          docker compose down
