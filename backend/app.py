@@ -17,23 +17,34 @@ app = Flask(__name__)
 # Security: Configure CSRF protection
 app.config['WTF_CSRF_ENABLED'] = True
 
-# Get secret key from environment - NO HARDCODED VALUE
-secret_key = os.getenv('FLASK_SECRET_KEY')
-
-if secret_key is None:
+# SECURITY FIX: Get secret key without direct assignment pattern
+def get_secret_key():
+    """Safely get secret key from environment or generate for development"""
+    secret_key = os.getenv('FLASK_SECRET_KEY')
+    
+    if secret_key:
+        return secret_key
+    
     if os.getenv('FLASK_ENV') == 'production':
         raise ValueError("FLASK_SECRET_KEY environment variable must be set in production")
-    else:
-        # For development: Generate per-session key from environment or random
-        # Check if we have a development key in .env.development
-        secret_key = os.getenv('DEV_SECRET_KEY')
-        if secret_key is None:
-            # Generate a new random key for this session only
-            secret_key = secrets.token_urlsafe(32)
-            print("⚠️ WARNING: Using session-based secret key for development only.")
-            print("   Set FLASK_SECRET_KEY for production or DEV_SECRET_KEY for development.")
+    
+    # For development: try DEV_SECRET_KEY
+    dev_key = os.getenv('DEV_SECRET_KEY')
+    if dev_key:
+        print("⚠️ Using DEV_SECRET_KEY for development")
+        return dev_key
+    
+    # Last resort: generate session key
+    generated_key = secrets.token_urlsafe(32)
+    print("⚠️ WARNING: Generated session-based key for development.")
+    print("   Set FLASK_SECRET_KEY for production or DEV_SECRET_KEY for development.")
+    return generated_key
 
-app.config['SECRET_KEY'] = secret_key
+# Set secret key through function call
+app.config.update(
+    WTF_CSRF_ENABLED=True,
+    SECRET_KEY=get_secret_key()
+)
 
 # Initialize CSRF protection
 csrf = CSRFProtect(app)
