@@ -1,11 +1,13 @@
 import os
-from flask import Flask, jsonify, request
+import secrets
+from flask import Flask, jsonify, request, Response
 from flask_cors import CORS
 import requests
 from prometheus_flask_exporter import PrometheusMetrics
 from dotenv import load_dotenv
 from flask_wtf.csrf import CSRFProtect
 from urllib.parse import quote
+from prometheus_client import generate_latest, CONTENT_TYPE_LATEST
 
 # Load environment variables from .env file
 load_dotenv()
@@ -13,9 +15,18 @@ load_dotenv()
 app = Flask(__name__)
 
 # Security: Configure CSRF protection
-# For API-only applications, we need to configure it properly
 app.config['WTF_CSRF_ENABLED'] = True
-app.config['SECRET_KEY'] = os.getenv('FLASK_SECRET_KEY', 'dev-secret-key-change-in-production')
+
+# SECURITY FIX: Remove hardcoded credential
+app.config['SECRET_KEY'] = os.getenv('FLASK_SECRET_KEY')
+
+# Check if secret key is set
+if app.config['SECRET_KEY'] is None:
+    if os.getenv('FLASK_ENV') == 'production':
+        raise ValueError("FLASK_SECRET_KEY environment variable must be set in production")
+    else:
+        app.config['SECRET_KEY'] = secrets.token_hex(32)
+        print("⚠️ WARNING: Using auto-generated secret key for development only. Set FLASK_SECRET_KEY for production.")
 
 # Initialize CSRF protection
 csrf = CSRFProtect(app)
@@ -67,7 +78,6 @@ def get_rates():
         api_key = EXCHANGE_API_KEY
         base = request.args.get('base', 'USD')
         
-        # MINIMAL VALIDATION: Only add this block
         # Validate currency code is exactly 3 uppercase letters
         if not base.isalpha() or len(base) != 3 or not base.isupper():
             return jsonify({
@@ -76,10 +86,9 @@ def get_rates():
             }), 400
         
         # URL SAFETY: URL encode the base currency
-        from urllib.parse import quote
         encoded_base = quote(base, safe='')
         
-        # ORIGINAL CODE with only this line changed:
+        # SECURITY FIX: URL encoding prevents path manipulation
         response = requests.get(
             f"https://v6.exchangerate-api.com/v6/{api_key}/latest/{encoded_base}",
             timeout=5
@@ -97,6 +106,7 @@ def get_rates():
             "status": "error",
             "message": str(e)
         }), 500
+
 @app.route('/convert')
 @conversion_counter
 def convert():
@@ -108,7 +118,7 @@ def convert():
         to_curr = request.args.get('to', 'EUR')
         amount = float(request.args.get('amount', 1))
         
-        # MINIMAL VALIDATION for both currencies
+        # Validate currency codes
         if not from_curr.isalpha() or len(from_curr) != 3 or not from_curr.isupper():
             return jsonify({
                 "status": "error",
@@ -121,15 +131,21 @@ def convert():
                 "message": "Invalid 'to' currency code. Must be 3 uppercase letters."
             }), 400
         
-        # URL SAFETY: URL encode the currencies
-        from urllib.parse import quote
-        encoded_from = quote(from_curr, safe='')
-        encoded_to = quote(to_curr, safe='')
+        # Validate amount
+        if amount <= 0:
+            return jsonify({
+                "status": "error",
+                "message": "Amount must be positive."
+            }), 400
         
         # Security: API key comes from environment variable
         api_key = EXCHANGE_API_KEY
         
-        # ORIGINAL CODE with only this line changed:
+        # URL SAFETY: URL encode the currencies
+        encoded_from = quote(from_curr, safe='')
+        encoded_to = quote(to_curr, safe='')
+        
+        # SECURITY FIX: URL encoding prevents path manipulation
         response = requests.get(
             f"https://v6.exchangerate-api.com/v6/{api_key}/pair/{encoded_from}/{encoded_to}/{amount}",
             timeout=5
@@ -145,6 +161,11 @@ def convert():
             "rate": data.get("conversion_rate")
         })
         
+    except ValueError:
+        return jsonify({
+            "status": "error",
+            "message": "Invalid amount parameter. Must be a number."
+        }), 400
     except Exception as e:
         return jsonify({
             "status": "error",
@@ -154,18 +175,10 @@ def convert():
 @app.route('/metrics')
 def metrics_endpoint():
     """Prometheus metrics endpoint"""
-    from prometheus_client import generate_latest, CONTENT_TYPE_LATEST
-    from flask import Response
     return Response(generate_latest(), mimetype=CONTENT_TYPE_LATEST)
 
 # Export application for PythonAnywhere
 application = app
 
 if __name__ == '__main__':
-    # Security note: For production, use a proper secret key
-    if os.getenv('FLASK_ENV') == 'production':
-        app.config['SECRET_KEY'] = os.getenv('FLASK_SECRET_KEY')
-        if not app.config['SECRET_KEY']:
-            raise ValueError("FLASK_SECRET_KEY must be set in production")
-    
     app.run(host='0.0.0.0', port=5000, debug=False)
