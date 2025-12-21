@@ -1,0 +1,48 @@
+name: 🔍 DAST Security Scan
+on:
+  push:
+    branches: [ main , master ]
+  pull_request:
+    branches: [ main , master ]
+  schedule:
+    # Scan quotidien à minuit
+    - cron: '0 0 * * *'
+  workflow_dispatch: # Permet de lancer manuellement
+
+jobs:
+  dynamic-application-security-testing:
+    name: DAST Scan with OWASP ZAP
+    runs-on: ubuntu-latest
+    
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Start Application with Docker Compose
+        run: |
+          cd backend
+          docker-compose up -d web
+          sleep 10 # Attendre que l'API soit prête
+          
+      - name: Run OWASP ZAP Baseline Scan
+        uses: zaproxy/action-baseline@v0.11.0
+        with:
+          # URL de ton API Flask (en local dans le runner)
+          target: 'http://localhost:5000'
+          # Niveau de scan (LOW pour être sûr de ne rien casser)
+          rules_file_name: 'Light'
+          # Fichiers à ignorer (ex: endpoints sensibles)
+          cmd_options: '-I'
+          
+      - name: Upload ZAP Report
+        if: always() # Toujours uploader, même en cas d'échec
+        uses: actions/upload-artifact@v4
+        with:
+          name: zap-security-report
+          path: zap-report.md
+          
+      - name: Cleanup Docker
+        if: always()
+        run: |
+          cd backend
+          docker-compose down
