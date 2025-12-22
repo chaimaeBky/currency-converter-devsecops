@@ -93,6 +93,7 @@ def health():
             "environment": os.getenv('FLASK_ENV', 'development'),
             "api_key_configured": EXCHANGE_API_KEY is not None
         }
+        
     }), 200
 
 @app.route('/rates')
