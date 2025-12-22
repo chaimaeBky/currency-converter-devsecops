@@ -53,7 +53,7 @@ jobs:
       - name: Skip Codecov if no token
         if: success() && env.CODECOV_TOKEN == ''
         run: |
-          echo "⚠️ CODECOV_TOKEN not set. Skipping Codecov upload."
+          echo "CODECOV_TOKEN not set. Skipping Codecov upload."
           echo "Coverage report saved as artifact."
 
       - name: Upload coverage report
